@@ -10,6 +10,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
 #include "shared.h"
 
@@ -275,15 +276,6 @@ int main(int argc, char **argv)
   // TODO: Bring the next two lines back into the code
   // pthread_create(&thread1, &pthread_attr_default,
   //                &print_message_function, (void *)message1);
-
-  // shared data to be used for communication between threads
-  // main thread, populatetree, readprefix, countprefix
-  SHARED_DATA sharedData;
-
-  // SHARED_DATA *sharedData = (SHARED_DATA*) malloc(sizeof(SHARED_DATA));
-
-  // initialize the sharedData, you can have a helper to do it
-  //...
 
   // populatetree thread, more comments here of what this thread does
   pthread_t populateTreeThread;

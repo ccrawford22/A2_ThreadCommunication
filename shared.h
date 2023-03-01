@@ -40,10 +40,9 @@ the output */
 /* Common data shared between threads */
 typedef struct
 {
-    // TODO: Remove next 4 lines if not necessary
     // /**
-    //  * root node of the dictionary tree
-    //  *    */
+    // root node of the dictionary tree
+    //
     // dictEntry *dictRootNode;
 
     dictEntry dictionary;
