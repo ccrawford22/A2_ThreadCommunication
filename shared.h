@@ -5,7 +5,8 @@
  * Shared constants and data structures among threads
  **/
 
-#define NUMOFFILES 2
+#define NUMOFINFILES 2
+#define NUMOFTHREADS 3
 #define DICTSRCFILEINDEX 0
 #define TESTFILEINDEX 1
 #define OUTFILEINDEX 2
@@ -26,7 +27,7 @@ the output */
 // default output file name
 #define DEFAULT_OUTPUT_FILENAME "countprefix_output.txt"
 #define DEFAULT_OUTPUT_EXT ".txt"
-// #define DEFAULT_WAIT std::chrono::nanoseconds(10)
+#define DEFAULT_WAIT std::chrono::nanoseconds(10)
 
 // include previsouly implemented dictionary structure
 #include "dictionary.h"
@@ -65,7 +66,7 @@ typedef struct
      *               providing words to populate the dictionary tree
      * filePath[1] - file path for the test source file providing prefixes
      */
-    const char *filePath[NUMOFFILES + 1];
+    const char *filePath[NUMOFTHREADS];
 
     /** store total number of characters in files
      * totalNumOfCharsInFile[DICTSRCFILEINDEX]
@@ -85,7 +86,7 @@ typedef struct
      * of each line only has a line feed character. The stat, lstat, fstat would include the
      * count of the line feed character from each line.
      */
-    long totalNumOfCharsInFile[NUMOFFILES];
+    long totalNumOfCharsInFile[NUMOFINFILES];
 
     /**
      * Use numOfCharsProcessedFromFile to track ongoing progress of
@@ -116,7 +117,7 @@ typedef struct
      *   - number of chars read in and processed from
      *     the test file, you may NOT this number for this assignment
      */
-    long numOfCharsReadFromFile[NUMOFFILES];
+    long numOfCharsReadFromFile[NUMOFINFILES];
 
     /**
      * wordCountInFile[DICTSRCFILEINDEX]
@@ -124,7 +125,7 @@ typedef struct
      * wordCountInFile[TESTFILEINDEX]
      *   - number of total words in the test file
      */
-    long wordCountInFile[NUMOFFILES];
+    long wordCountInFile[NUMOFINFILES];
 
     /**
      * number of prefixes that have been read from the prefix queue,
@@ -155,6 +156,10 @@ typedef struct
      *                     readprefix and countprefix threads have to wait for populatetree
      *                     thread logic to complete before executing their thread logic
      *
+     *     -1: means the thread has errored out
+     *      0: means the thread is working on the task at hand
+     *      1: means the task is complete
+     *
      * taskCompleted[DICTSRCFILEINDEX]
      *   - boolean flag to indicate whether the tree population
      *     thread has completed the task: read words from the
@@ -171,10 +176,11 @@ typedef struct
      *   - main thread progress display would use this flag to
      *     start to show the countprefix progress bar
      */
-    int taskCompleted[NUMOFFILES]; // TODO: change back to bool and use pthread exit codes
+    int taskResult[NUMOFTHREADS]; // TODO: change back to bool and use pthread exit codes
 
     // default amount of time to sleep a task while waiting for other tasks
     std::chrono::nanoseconds defaultWait;
+
     bool verbose;
 } SHARED_DATA;
 

@@ -28,16 +28,31 @@
 using namespace std;              // Make sure std components accessible
 using namespace std::this_thread; // sleep_for, sleep_until
 
-void print_progress(SHARED_DATA &sharedData)
+void print_progress(SHARED_DATA &sharedData, int fileIndex)
 {
-  float pctDecimal = (float)sharedData.numOfCharsReadFromFile[DICTSRCFILEINDEX] /
-                     sharedData.totalNumOfCharsInFile[DICTSRCFILEINDEX];
+  float pctDecimal = 0.0f;
+  switch (fileIndex)
+  {
+  case DICTSRCFILEINDEX:
+    pctDecimal = (float)sharedData.numOfCharsReadFromFile[DICTSRCFILEINDEX] /
+                 sharedData.totalNumOfCharsInFile[DICTSRCFILEINDEX];
+    break;
+  case TESTFILEINDEX:
+    pctDecimal = (float)sharedData.numOfCharsReadFromFile[TESTFILEINDEX] /
+                 sharedData.totalNumOfCharsInFile[TESTFILEINDEX];
+    break;
+  case OUTFILEINDEX:
+    pctDecimal = (float)sharedData.numOfProcessedPrefixes /
+                 sharedData.wordCountInFile[TESTFILEINDEX];
+    break;
+  default:
+    break;
+  }
   float progress = min(1.0f, max(0.0f, pctDecimal));
   int pos = sharedData.numOfProgressMarks * progress;
-  cout << "[";
   for (int i = 0; i < sharedData.numOfProgressMarks; ++i)
   {
-    if (i < pos && i % sharedData.hashmarkInterval == sharedData.hashmarkInterval - 1)
+    if (i < pos && (i + 1) % sharedData.hashmarkInterval == 0)
       cout << "#";
     else if (i < pos)
       cout << "-";
@@ -46,7 +61,7 @@ void print_progress(SHARED_DATA &sharedData)
     else
       cout << " ";
   }
-  cout << "]" << int(progress * 100.0f) << " %\r";
+  cout << "\r";
   cout.flush();
 }
 
@@ -74,7 +89,6 @@ int main(int argc, char **argv)
   }
 
   // DEFINE AND INITIALIZE MAIN THREAD VARIABLES
-  // bool verbose = false; // chatty or quiet program
   int option; /* command line switch */
   int idx;    // general purpose index variable
   string filename;
@@ -89,7 +103,7 @@ int main(int argc, char **argv)
   sharedData.hashmarkInterval = DEFAULT_HASHMARKINTERVAL;
   sharedData.minNumOfWordsWithAPrefixForPrinting = DEFAULT_MINNUM_OFWORDS_WITHAPREFIX;
   sharedData.filePath[OUTFILEINDEX] = DEFAULT_OUTPUT_FILENAME;
-  //   sharedData.defaultWait = DEFAULT_WAIT;
+  sharedData.defaultWait = DEFAULT_WAIT;
   pthread_mutex_init(&(sharedData.queue_mutex), NULL); // TODO: Is this necessary?
   pthread_mutex_init(&(sharedData.debug_mutex), NULL); // TODO: Is this necessary?
   // // other stuff (e.g. declarations)
@@ -152,7 +166,7 @@ int main(int argc, char **argv)
       {
         cout << endl
              << "Number of progress marks must be a number and at least 10." << endl;
-        cout << "-p argument = " << sharedData.numOfProgressMarks << endl;
+        // cout << "-p argument = " << sharedData.numOfProgressMarks << endl;
         exit(BADFLAG);
       }
       break;
@@ -170,8 +184,9 @@ int main(int argc, char **argv)
       if (sharedData.hashmarkInterval > 10 || sharedData.hashmarkInterval <= 0)
       {
         cout << endl
-             << "Hash mark interval for progress must be a number, greater than 0, and less than or equal to 10." << endl;
-        cout << "-h argument = " << sharedData.hashmarkInterval << endl;
+             << "Hash mark interval for progress must be a number,"
+                "greater than 0, and less than or equal to 10."
+             << endl;
         exit(BADFLAG);
       }
       break;
@@ -188,7 +203,6 @@ int main(int argc, char **argv)
       {
         cout << endl
              << "Count (arg -n) must be greater than or equal to 0." << endl;
-        cout << "-n argument = " << sharedData.minNumOfWordsWithAPrefixForPrinting << endl;
         exit(BADFLAG);
       }
       break;
@@ -203,7 +217,6 @@ int main(int argc, char **argv)
       {
         cout << endl
              << "Output file (arg -o) must be a properly named '.txt' file" << endl;
-        cout << "-o argument (optional output file name) = " << filename << endl;
         exit(BADFLAG);
       }
       sharedData.filePath[OUTFILEINDEX] = optarg;
@@ -248,7 +261,7 @@ int main(int argc, char **argv)
 
     if (sharedData.verbose && idx < argc)
     {
-      cout << "Recieved " << argc - idx << "additional arguments that will be ignored:" << endl;
+      cout << "Recieved " << argc - idx << " additional arguments that will be ignored:" << endl;
       for (int i = idx; i < argc; i++)
       {
         cout << "\tArg " << i << " = " << argv[i] << endl;
@@ -290,15 +303,19 @@ int main(int argc, char **argv)
   {
     pthread_mutex_lock(&(sharedData.debug_mutex));
     cout << endl
-         << "Unable to create countPrefix thread." << endl;
+         << "Unable to create countPrefixThread." << endl;
     pthread_mutex_unlock(&(sharedData.debug_mutex));
     exit(BADFLAG); // BADFLAG is an error # defined in a header
   }
 
   // HANDLE PROGRESS BARS
-  // start on a new line
-  cout << endl;
-  while (sharedData.taskCompleted[DICTSRCFILEINDEX] != 1)
+
+  if (sharedData.verbose)
+    cout << endl
+         << "populateTree thread progress: " << endl;
+
+  // POPULATE TREE PROGRESS BAR (mandatory)
+  while (sharedData.taskResult[DICTSRCFILEINDEX] != 1)
   {
     // take a brief pause between checks
     sleep_for(sharedData.defaultWait);
@@ -310,7 +327,7 @@ int main(int argc, char **argv)
       continue;
 
     // handle populatetree states
-    switch (sharedData.taskCompleted[DICTSRCFILEINDEX])
+    switch (sharedData.taskResult[DICTSRCFILEINDEX])
     {
     case -1: // an error has occured
       exit(BADFLAG);
@@ -319,7 +336,7 @@ int main(int argc, char **argv)
       // print progress bar for populatetree thread
       // use the SHARED_DATA
       pthread_mutex_lock(&(sharedData.debug_mutex));
-      print_progress(sharedData);
+      print_progress(sharedData, DICTSRCFILEINDEX);
       pthread_mutex_unlock(&(sharedData.debug_mutex));
 
       break;
@@ -331,17 +348,91 @@ int main(int argc, char **argv)
 
   // print progress one more time to make sure it is fully displayed
   pthread_mutex_lock(&(sharedData.debug_mutex));
-  print_progress(sharedData);
+  print_progress(sharedData, DICTSRCFILEINDEX);
   pthread_mutex_unlock(&(sharedData.debug_mutex));
   // create a new line so that other progress bars appear below this one
   cout << endl;
+  // output word count
+  cout << "There are " << sharedData.wordCountInFile[DICTSRCFILEINDEX]
+       << " words in " << sharedData.filePath[DICTSRCFILEINDEX] << "." << endl;
 
-  // print progress bar for populatetree thread
-  // use the SHARED_DATA
+  // debugging
+  if (sharedData.verbose)
+    cout << endl
+         << "readPrefix thread progress: " << endl;
 
-  // print progress bar for countprefix thread
-  // note this needs to wait for the completion of readprefix thread
-  // use the SHARED_DATA
+  // READ PREFIX PROGRESS BAR (only prints in verbose mode)
+  while (sharedData.taskResult[TESTFILEINDEX] != 1)
+  {
+    // take a brief pause between checks
+    sleep_for(sharedData.defaultWait);
+
+    // handle readprefix states
+    switch (sharedData.taskResult[TESTFILEINDEX])
+    {
+    case -1: // an error has occured
+      exit(BADFLAG);
+      break;
+    case 0: // still working
+      if (sharedData.verbose)
+      {
+        pthread_mutex_lock(&(sharedData.debug_mutex));
+        // print progress bar for readPrefix thread
+        print_progress(sharedData, TESTFILEINDEX);
+        // use the SHARED_DATA
+        pthread_mutex_unlock(&(sharedData.debug_mutex));
+      }
+      break;
+    default: // done
+      break;
+    }
+  }
+
+  // create a new line at the end of all progress bars
+  if (sharedData.verbose)
+    cout << endl;
+
+  // debugging
+  if (sharedData.verbose)
+    cout << endl
+         << "countPrefix thread progress: " << endl;
+
+  // COUNT PREFIX PROGRESS BAR (mandatory)
+  while (sharedData.taskResult[OUTFILEINDEX] != 1)
+  {
+    // take a brief pause between checks
+    sleep_for(sharedData.defaultWait);
+
+    // handle readprefix states
+    switch (sharedData.taskResult[OUTFILEINDEX])
+    {
+    case -1: // an error has occured
+      exit(BADFLAG);
+      break;
+    case 0: // still working
+      if (sharedData.verbose)
+      {
+        pthread_mutex_lock(&(sharedData.debug_mutex));
+        // print progress bar for countPrefix thread
+        print_progress(sharedData, OUTFILEINDEX);
+        // use the SHARED_DATA
+        pthread_mutex_unlock(&(sharedData.debug_mutex));
+      }
+      break;
+    default: // done
+      break;
+    }
+  }
+
+  // print progress one more time to make sure it's fully displayed
+  pthread_mutex_lock(&(sharedData.debug_mutex));
+  print_progress(sharedData, OUTFILEINDEX);
+  pthread_mutex_unlock(&(sharedData.debug_mutex));
+  cout << endl;
+
+  // output word count
+  cout << "There are " << sharedData.wordCountInFile[TESTFILEINDEX]
+       << " words in " << sharedData.filePath[TESTFILEINDEX] << "." << endl;
 
   exit(NORMALEXIT); // Normal Exit!
 }

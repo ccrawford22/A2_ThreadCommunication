@@ -12,37 +12,46 @@ void *readPrefixToQueue(void *shared)
     // debugging
     if (data->verbose)
     {
-        pthread_mutex_lock(&(data->debug_mutex));
+        pthread_mutex_lock(&(data->queue_mutex));
         cout << "Attempting to load file: " << testFilename << "'" << endl;
         cout << "\tWaiting until dictionary tree has been built." << endl;
-        pthread_mutex_unlock(&(data->debug_mutex));
+        pthread_mutex_unlock(&(data->queue_mutex));
     }
 
     // wait until vocabulary tree is built
-    while (data->taskCompleted[DICTSRCFILEINDEX] != 1)
+    while (data->taskResult[DICTSRCFILEINDEX] != 1)
     {
         // take a brief pause between checks
         sleep_for(data->defaultWait);
 
         // check for tree error
-        if (data->taskCompleted[DICTSRCFILEINDEX] == -1)
+        if (data->taskResult[DICTSRCFILEINDEX] == -1)
         {
-            data->taskCompleted[TESTFILEINDEX] = -1;
+            data->taskResult[TESTFILEINDEX] = -1;
 
             return nullptr;
         }
+    }
+
+    // debugging
+    if (data->verbose)
+    {
+        pthread_mutex_lock(&(data->queue_mutex));
+        cout << "Done waiting for dictionary tree. Starting to load file: '" << testFilename << "'" << endl;
+        pthread_mutex_unlock(&(data->queue_mutex));
     }
 
     // read in the vocabulary file
     ifstream testFile(testFilename, ifstream::in); // open file for parsing
     if (!testFile.is_open())
     {
-        pthread_mutex_lock(&(data->debug_mutex));
-        cout << "Unable to open <<" << testFilename << ">>" << endl;
-        pthread_mutex_unlock(&(data->debug_mutex));
+        pthread_mutex_lock(&(data->queue_mutex));
+        cout << endl
+             << "Unable to open <<" << testFilename << ">>" << endl;
+        pthread_mutex_unlock(&(data->queue_mutex));
 
         // let other threads know there was an error reading the vocab file
-        data->taskCompleted[TESTFILEINDEX] = -1;
+        data->taskResult[TESTFILEINDEX] = -1;
     }
     else
     {
@@ -65,18 +74,18 @@ void *readPrefixToQueue(void *shared)
                 // debugging
                 if (data->verbose)
                 {
-                    pthread_mutex_lock(&(data->debug_mutex));
-                    cout << "\tAttempting to add prefixWord '" << prefixWord << "' to dictionary." << endl;
-                    pthread_mutex_unlock(&(data->debug_mutex));
+                    pthread_mutex_lock(&(data->queue_mutex));
+                    cout << "\tAttempting to add prefixWord '" << prefixWord << "' to Dictionary Tree." << endl;
+                    pthread_mutex_unlock(&(data->queue_mutex));
                 }
 
                 // insert prefixWord in prefix queue
-                pthread_mutex_lock(&(data->debug_mutex));
+                pthread_mutex_lock(&(data->queue_mutex));
                 data->prefixQueue.push(prefixWord);
-                pthread_mutex_unlock(&(data->debug_mutex));
+                pthread_mutex_unlock(&(data->queue_mutex));
 
                 // update number of words read from file
-                data->wordCountInFile[TESTFILEINDEX] = +1;
+                data->wordCountInFile[TESTFILEINDEX] += 1;
 
                 // read next prefix word
                 prefixWord = strtok(NULL, delimiters);
@@ -90,17 +99,17 @@ void *readPrefixToQueue(void *shared)
         testFile.close();
 
         // let other threads know this one is complete
-        data->taskCompleted[TESTFILEINDEX] = 1;
+        data->taskResult[TESTFILEINDEX] = 1;
 
         // debugging
         if (data->verbose)
         {
-            pthread_mutex_lock(&(data->debug_mutex));
+            pthread_mutex_lock(&(data->queue_mutex));
             cout << "Finished loading file: '" << testFilename << "'" << endl;
             cout << "\tTotal characters in file: " << data->totalNumOfCharsInFile[TESTFILEINDEX] << endl;
             cout << "\tTotal characters read: " << data->numOfCharsReadFromFile[TESTFILEINDEX] << endl;
             cout << "\tTotal words in file: " << data->wordCountInFile[TESTFILEINDEX] << endl;
-            pthread_mutex_unlock(&(data->debug_mutex));
+            pthread_mutex_unlock(&(data->queue_mutex));
         }
     }
 

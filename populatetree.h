@@ -19,23 +19,24 @@ void *populateTree(void *shared)
     // debugging
     if (data->verbose)
     {
-        pthread_mutex_lock(&(data->debug_mutex));
+        // TODO: might need to change to queue_mutex
+        pthread_mutex_lock(&(data->queue_mutex));
         cout << endl
              << "Attemting to load file: " << dictFilename << "'" << endl;
-        pthread_mutex_unlock(&(data->debug_mutex));
+        pthread_mutex_unlock(&(data->queue_mutex));
     }
 
     // read in the vocabulary file
     ifstream vocabFile(dictFilename, ifstream::in);
     if (!vocabFile.is_open())
     {
-        pthread_mutex_lock(&(data->debug_mutex));
+        pthread_mutex_lock(&(data->queue_mutex));
         cout << endl
              << "Unable to open <<" << dictFilename << ">>" << endl;
-        pthread_mutex_unlock(&(data->debug_mutex));
+        pthread_mutex_unlock(&(data->queue_mutex));
 
         // let other threads know there was an error reading the vocab file
-        data->taskCompleted[DICTSRCFILEINDEX] = -1;
+        data->taskResult[DICTSRCFILEINDEX] = -1;
     }
     else
     {
@@ -57,17 +58,17 @@ void *populateTree(void *shared)
             {
                 if (data->verbose)
                 {
-                    pthread_mutex_lock(&(data->debug_mutex));
-                    cout << "\tAttempting to add vocabWord '" << vocabWord << "' to dictionary tree." << endl;
-                    pthread_mutex_unlock(&(data->debug_mutex));
+                    pthread_mutex_lock(&(data->queue_mutex));
+                    cout << "\tAttempting to add vocabWord '" << vocabWord << "' to Dictionary Tree." << endl;
+                    pthread_mutex_unlock(&(data->queue_mutex));
                 }
 
                 // call add method to insert vocabWord to build the dictionary tree
                 if (!data->dictionary.add(vocabWord))
                 {
-                    pthread_mutex_lock(&(data->debug_mutex));
-                    cout << "\tUnable to add vocabWord '" << vocabWord << "' to dictionary tree." << endl;
-                    pthread_mutex_unlock(&(data->debug_mutex));
+                    pthread_mutex_lock(&(data->queue_mutex));
+                    cout << "\tUnable to add vocabWord '" << vocabWord << "' to Dictionary Tree." << endl;
+                    pthread_mutex_unlock(&(data->queue_mutex));
                 }
 
                 // update number of words read from file
@@ -85,7 +86,7 @@ void *populateTree(void *shared)
         vocabFile.close();
 
         // let other threads know this is complete
-        data->taskCompleted[DICTSRCFILEINDEX] = 1;
+        data->taskResult[DICTSRCFILEINDEX] = 1;
     }
 
     return nullptr;
