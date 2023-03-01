@@ -27,7 +27,7 @@ void *readPrefixToQueue(void *shared)
         // check for tree error
         if (data->taskCompleted[DICTSRCFILEINDEX] == -1)
         {
-            data->taskCompleted[TESTFILEINDEX] == -1;
+            data->taskCompleted[TESTFILEINDEX] = -1;
 
             return nullptr;
         }

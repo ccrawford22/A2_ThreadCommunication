@@ -28,17 +28,6 @@
 using namespace std;              // Make sure std components accessible
 using namespace std::this_thread; // sleep_for, sleep_until
 
-// TODO: Remove this function
-void *print_message_function(void *ptr)
-{
-  char *message;
-  message = (char *)ptr;
-  cout << endl;
-  printf("%s", message);
-  cout << endl;
-  pthread_exit(0);
-}
-
 void print_progress(SHARED_DATA &sharedData)
 {
   float pctDecimal = (float)sharedData.numOfCharsReadFromFile[DICTSRCFILEINDEX] /
@@ -100,8 +89,9 @@ int main(int argc, char **argv)
   sharedData.hashmarkInterval = DEFAULT_HASHMARKINTERVAL;
   sharedData.minNumOfWordsWithAPrefixForPrinting = DEFAULT_MINNUM_OFWORDS_WITHAPREFIX;
   sharedData.filePath[OUTFILEINDEX] = DEFAULT_OUTPUT_FILENAME;
-  sharedData.defaultWait = DEFAULT_WAIT;
-  pthread_mutex_init(&sharedData.queue_mutex, NULL); // TODO: Is this necessary?
+  //   sharedData.defaultWait = DEFAULT_WAIT;
+  pthread_mutex_init(&(sharedData.queue_mutex), NULL); // TODO: Is this necessary?
+  pthread_mutex_init(&(sharedData.debug_mutex), NULL); // TODO: Is this necessary?
   // // other stuff (e.g. declarations)
   // int marksProgress = 50;
   // int marksHash = 10;
@@ -266,17 +256,6 @@ int main(int argc, char **argv)
     }
   }
 
-  // sample pthread code
-  pthread_attr_t pthread_attr_default;
-
-  pthread_t thread1;
-  char message1[] = "Hello World";
-
-  pthread_attr_init(&pthread_attr_default);
-  // TODO: Bring the next two lines back into the code
-  // pthread_create(&thread1, &pthread_attr_default,
-  //                &print_message_function, (void *)message1);
-
   // populatetree thread, more comments here of what this thread does
   pthread_t populateTreeThread;
   // readprefix thread, more comments here of what this thread does
@@ -322,7 +301,7 @@ int main(int argc, char **argv)
   while (sharedData.taskCompleted[DICTSRCFILEINDEX] != 1)
   {
     // take a brief pause between checks
-    sleep_for(sharedData.DEFAULT_WAIT);
+    sleep_for(sharedData.defaultWait);
 
     // wait until thread has finished counting characters in the file
     // to avoid division by 0

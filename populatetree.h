@@ -9,9 +9,9 @@
 #include "shared.h"
 
 using namespace std;
-using namespace std::this_thread; //sleep_for, sleep_until
+using namespace std::this_thread; // sleep_for, sleep_until
 
-void *populateTree(void *shared) 
+void *populateTree(void *shared)
 {
     SHARED_DATA *data = (SHARED_DATA *)shared;
     string dictFilename = data->filePath[DICTSRCFILEINDEX];
@@ -20,7 +20,8 @@ void *populateTree(void *shared)
     if (data->verbose)
     {
         pthread_mutex_lock(&(data->debug_mutex));
-        cout << endl << "Attemting to load file: " << dictFilename << "'" << endl;
+        cout << endl
+             << "Attemting to load file: " << dictFilename << "'" << endl;
         pthread_mutex_unlock(&(data->debug_mutex));
     }
 
@@ -29,7 +30,8 @@ void *populateTree(void *shared)
     if (!vocabFile.is_open())
     {
         pthread_mutex_lock(&(data->debug_mutex));
-        cout << endl << "Unable to open <<" << dictFilename << ">>" << endl;
+        cout << endl
+             << "Unable to open <<" << dictFilename << ">>" << endl;
         pthread_mutex_unlock(&(data->debug_mutex));
 
         // let other threads know there was an error reading the vocab file

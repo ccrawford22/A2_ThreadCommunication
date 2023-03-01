@@ -26,7 +26,7 @@ the output */
 // default output file name
 #define DEFAULT_OUTPUT_FILENAME "countprefix_output.txt"
 #define DEFAULT_OUTPUT_EXT ".txt"
-#define DEFAULT_WAIT std::chrono::nanoseconds(10)
+// #define DEFAULT_WAIT std::chrono::nanoseconds(10)
 
 // include previsouly implemented dictionary structure
 #include "dictionary.h"
