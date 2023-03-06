@@ -1,3 +1,8 @@
+# CS480 - Spring 2023
+# Cody Crawford
+# RedID:824167663
+# Program 2
+
 ## MacOS VS Code installation tutorials
 # https://eecs280staff.github.io/tutorials/setup_vscode.html 
 
@@ -12,7 +17,7 @@ CXXFLAGS=-std=c++11 -Wall -g3 -c
 OBJS = dictionary.o thread_manager.o
 
 # Program name
-PROGRAM = thread_manager.exe
+PROGRAM = countprefix
 
 # Rules format:
 # target : dependency1 dependency2 ... dependencyN
@@ -22,7 +27,7 @@ PROGRAM = thread_manager.exe
 # make target specifies a specific target
 # $^ is an example of a special variable.  It substitutes all dependencies
 $(PROGRAM) : $(OBJS)
-	$(CXX) -o $(PROGRAM) $^
+	$(CXX) -pthread -o $(PROGRAM) $^
 
 dictionary.o : dictionary.h dictionary.cpp
 	$(CXX) $(CXXFLAGS) dictionary.cpp
@@ -31,5 +36,5 @@ thread_manager.o : dictionary.o countprefix.h populatetree.h readprefix.h thread
 	$(CXX) $(CXXFLAGS) thread_manager.cpp
 
 clean :
-	rm -f *.o *.exe 
+	rm -f *.o *.exe $(PROGRAM)
 

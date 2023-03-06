@@ -1,3 +1,8 @@
+// CS480 - Spring 2023
+// Cody Crawford
+// RedID:824167663
+// Program 2
+
 #define BADFLAG 1
 #define NORMALEXIT 0
 
@@ -89,6 +94,7 @@ int main(int argc, char **argv)
   }
 
   // DEFINE AND INITIALIZE MAIN THREAD VARIABLES
+  bool verbose = false;
   int option; /* command line switch */
   int idx;    // general purpose index variable
   string filename;
