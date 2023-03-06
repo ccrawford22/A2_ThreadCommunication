@@ -187,6 +187,8 @@ typedef struct
     std::chrono::nanoseconds defaultWait;
 
     bool verbose;
+
+    float lastPrintedPosition[NUMOFTHREADS];
 } SHARED_DATA;
 
 #endif
